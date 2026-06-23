@@ -2,8 +2,9 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ultimate Focus Test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Ultimate iPad Monitor</title>
 
 <style>
 body{
@@ -14,7 +15,7 @@ body{
 #log{
     border:1px solid #ccc;
     padding:10px;
-    height:70vh;
+    height:80vh;
     overflow-y:auto;
     white-space:pre-wrap;
 }
@@ -22,7 +23,7 @@ body{
 </head>
 <body>
 
-<h2>Ultimate Focus / Visibility Monitor</h2>
+<h2>Ultimate iPad Monitor</h2>
 
 <div id="log"></div>
 
@@ -46,7 +47,11 @@ function log(msg){
     console.log(msg);
 }
 
-function add(target,event){
+/* =========================
+   EVENT LOGGER
+========================= */
+
+function watch(target,event){
 
     target.addEventListener(
         event,
@@ -55,50 +60,66 @@ function add(target,event){
     );
 }
 
-/* ==========================
-   EVENTI WINDOW
-========================== */
+/* =========================
+   WINDOW EVENTS
+========================= */
 
 [
- "focus",
- "blur",
- "pageshow",
- "pagehide",
- "resize",
- "orientationchange",
- "online",
- "offline",
- "beforeunload",
- "unload"
-].forEach(e => add(window,e));
+"focus",
+"blur",
+"pageshow",
+"pagehide",
+"resize",
+"orientationchange",
+"online",
+"offline",
+"beforeunload",
+"unload"
+].forEach(e => watch(window,e));
 
-/* ==========================
-   EVENTI DOCUMENT
-========================== */
-
-[
- "visibilitychange",
- "focusin",
- "focusout",
- "selectionchange",
- "fullscreenchange"
-].forEach(e => add(document,e));
-
-/* ==========================
-   EVENTI TOUCH
-========================== */
+/* =========================
+   DOCUMENT EVENTS
+========================= */
 
 [
- "touchstart",
- "touchend",
- "pointerdown",
- "pointerup",
- "pointermove"
-].forEach(e => add(document,e));
+"visibilitychange",
+"focusin",
+"focusout",
+"selectionchange",
+"fullscreenchange",
+"pointerlockchange"
+].forEach(e => watch(document,e));
 
-/* ==========================
-   VISIBILITY DETTAGLIATA
-========================== */
+/* =========================
+   TOUCH EVENTS
+========================= */
+
+[
+"touchstart",
+"touchend",
+"pointerdown",
+"pointerup"
+].forEach(e => watch(document,e));
+
+/* =========================
+   PAGE LIFECYCLE
+========================= */
+
+[
+"freeze",
+"resume"
+].forEach(e => {
+
+    document.addEventListener(
+        e,
+        () => log(e)
+    );
+
+});
+
+/* =========================
+   VISIBILITY DETAILS
+========================= */
 
 document.addEventListener(
     "visibilitychange",
@@ -112,36 +133,128 @@ document.addEventListener(
     }
 );
 
-/* ==========================
-   HEARTBEAT
-========================== */
+/* =========================
+   STATE CHANGE DETECTOR
+========================= */
+
+let previous = {};
+
+function snapshot(){
+
+    return {
+
+        focus:
+            document.hasFocus(),
+
+        hidden:
+            document.hidden,
+
+        visibility:
+            document.visibilityState,
+
+        width:
+            window.innerWidth,
+
+        height:
+            window.innerHeight,
+
+        vvWidth:
+            visualViewport
+                ? visualViewport.width
+                : null,
+
+        vvHeight:
+            visualViewport
+                ? visualViewport.height
+                : null,
+
+        scale:
+            visualViewport
+                ? visualViewport.scale
+                : null,
+
+        activeElement:
+            document.activeElement
+                ? document.activeElement.tagName
+                : "null"
+    };
+}
+
+function compare(){
+
+    const current = snapshot();
+
+    if(
+        JSON.stringify(current)
+        !==
+        JSON.stringify(previous)
+    ){
+
+        log(
+            "STATE -> " +
+            JSON.stringify(current)
+        );
+
+        previous = current;
+    }
+}
+
+previous = snapshot();
+
+setInterval(compare,250);
+
+/* =========================
+   TIMER THROTTLING TEST
+========================= */
+
+let last = performance.now();
 
 setInterval(() => {
 
-    let activeElement = "null";
+    const now = performance.now();
 
-    if(document.activeElement){
-        activeElement =
-            document.activeElement.tagName;
+    const drift = now - last;
+
+    if(drift > 500){
+
+        log(
+            "TIMER_DRIFT=" +
+            Math.round(drift) +
+            "ms"
+        );
     }
 
-    log(
-        "heartbeat" +
-        " | focus=" + document.hasFocus() +
-        " | hidden=" + document.hidden +
-        " | visibility=" + document.visibilityState +
-        " | width=" + window.innerWidth +
-        " | height=" + window.innerHeight +
-        " | activeElement=" + activeElement
+    last = now;
+
+},100);
+
+/* =========================
+   VISUAL VIEWPORT EVENTS
+========================= */
+
+if(visualViewport){
+
+    visualViewport.addEventListener(
+        "resize",
+        () => log("visualViewport.resize")
     );
 
-},250);
+    visualViewport.addEventListener(
+        "scroll",
+        () => log("visualViewport.scroll")
+    );
+}
 
-/* ==========================
+/* =========================
    START
-========================== */
+========================= */
 
-log("Ultimate monitor started");
+log("MONITOR STARTED");
+
+log(
+    "INITIAL STATE -> " +
+    JSON.stringify(snapshot())
+);
 
 </script>
 
