@@ -1,90 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Advanced Focus Test</title>
+<title>Ultimate Focus Test</title>
+
 <style>
-body { font-family: sans-serif; padding: 20px; }
-#log {
-    border: 1px solid #ccc;
-    height: 70vh;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    padding: 10px;
+body{
+    font-family:sans-serif;
+    padding:20px;
+}
+
+#log{
+    border:1px solid #ccc;
+    padding:10px;
+    height:70vh;
+    overflow-y:auto;
+    white-space:pre-wrap;
 }
 </style>
 </head>
 <body>
 
-<h2>Advanced Focus / Visibility Monitor</h2>
+<h2>Ultimate Focus / Visibility Monitor</h2>
+
 <div id="log"></div>
 
 <script>
 
 const logDiv = document.getElementById("log");
 
-function log(msg) {
-    const ts = new Date().toLocaleTimeString();
+function log(msg){
+
+    const now = new Date();
+
+    const ts =
+        now.toLocaleTimeString() +
+        "." +
+        String(now.getMilliseconds()).padStart(3,"0");
+
     logDiv.textContent += `[${ts}] ${msg}\n`;
+
     logDiv.scrollTop = logDiv.scrollHeight;
+
     console.log(msg);
 }
 
-function register(target, event) {
-    target.addEventListener(event, e => {
-        log(`${event}`);
-    }, true);
+function add(target,event){
+
+    target.addEventListener(
+        event,
+        () => log(event),
+        true
+    );
 }
 
-const windowEvents = [
-    "focus",
-    "blur",
-    "pageshow",
-    "pagehide",
-    "resize",
-    "orientationchange",
-    "online",
-    "offline",
-    "beforeunload",
-    "unload"
-];
+/* ==========================
+   EVENTI WINDOW
+========================== */
 
-const documentEvents = [
+[
+ "focus",
+ "blur",
+ "pageshow",
+ "pagehide",
+ "resize",
+ "orientationchange",
+ "online",
+ "offline",
+ "beforeunload",
+ "unload"
+].forEach(e => add(window,e));
+
+/* ==========================
+   EVENTI DOCUMENT
+========================== */
+
+[
+ "visibilitychange",
+ "focusin",
+ "focusout",
+ "selectionchange",
+ "fullscreenchange"
+].forEach(e => add(document,e));
+
+/* ==========================
+   EVENTI TOUCH
+========================== */
+
+[
+ "touchstart",
+ "touchend",
+ "pointerdown",
+ "pointerup",
+ "pointermove"
+].forEach(e => add(document,e));
+
+/* ==========================
+   VISIBILITY DETTAGLIATA
+========================== */
+
+document.addEventListener(
     "visibilitychange",
-    "fullscreenchange",
-    "focusin",
-    "focusout",
-    "selectionchange"
-];
+    () => {
 
-const pointerEvents = [
-    "pointerdown",
-    "pointerup",
-    "touchstart",
-    "touchend"
-];
+        log(
+            "visibilityState=" +
+            document.visibilityState
+        );
 
-windowEvents.forEach(e => register(window, e));
-documentEvents.forEach(e => register(document, e));
-pointerEvents.forEach(e => register(document, e));
+    }
+);
 
-document.addEventListener("visibilitychange", () => {
-    log(`visibilityState=${document.visibilityState}`);
-});
+/* ==========================
+   HEARTBEAT
+========================== */
 
 setInterval(() => {
 
+    let activeElement = "null";
+
+    if(document.activeElement){
+        activeElement =
+            document.activeElement.tagName;
+    }
+
     log(
-      `heartbeat | hidden=${document.hidden}` +
-      ` | focus=${document.hasFocus()}` +
-      ` | width=${window.innerWidth}` +
-      ` | height=${window.innerHeight}`
+        "heartbeat" +
+        " | focus=" + document.hasFocus() +
+        " | hidden=" + document.hidden +
+        " | visibility=" + document.visibilityState +
+        " | width=" + window.innerWidth +
+        " | height=" + window.innerHeight +
+        " | activeElement=" + activeElement
     );
 
-}, 2000);
+},250);
 
-log("Advanced monitor started");
+/* ==========================
+   START
+========================== */
+
+log("Ultimate monitor started");
 
 </script>
 
