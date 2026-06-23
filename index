@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus Test</title>
+<style>
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+#log {
+  white-space: pre-wrap;
+  border: 1px solid #ccc;
+  padding: 10px;
+  height: 70vh;
+  overflow-y: auto;
+}
+</style>
+</head>
+<body>
+
+<h2>Focus / Visibility Test</h2>
+<div id="log"></div>
+
+<script>
+const logDiv = document.getElementById("log");
+
+function log(msg) {
+  const t = new Date().toLocaleTimeString();
+  logDiv.textContent += `[${t}] ${msg}\n`;
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+[
+  "focus",
+  "blur",
+  "pageshow",
+  "pagehide",
+  "visibilitychange"
+].forEach(event => {
+  if (event === "visibilitychange") {
+    document.addEventListener(event, () => {
+      log(`visibilitychange -> ${document.visibilityState}`);
+    });
+  } else {
+    window.addEventListener(event, () => {
+      log(event);
+    });
+  }
+});
+
+log("Test avviato");
+</script>
+
+</body>
+</html>
