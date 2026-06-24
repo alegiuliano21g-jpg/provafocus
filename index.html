@@ -2,259 +2,294 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Ultimate iPad Monitor</title>
+<title>iPad Focus Dashboard</title>
 
 <style>
+
 body{
-    font-family:sans-serif;
+    font-family: system-ui, sans-serif;
     padding:20px;
+}
+
+#status{
+    border:2px solid #ccc;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:20px;
+}
+
+.good{
+    background:#e8f7e8;
+}
+
+.warn{
+    background:#fff4d6;
+}
+
+.bad{
+    background:#ffe0e0;
 }
 
 #log{
     border:1px solid #ccc;
-    padding:10px;
-    height:80vh;
+    height:55vh;
     overflow-y:auto;
+    padding:10px;
     white-space:pre-wrap;
 }
+
+h1{
+    margin-top:0;
+}
+
 </style>
 </head>
+
 <body>
 
-<h2>Ultimate iPad Monitor</h2>
+<h1>Focus Monitor</h1>
+
+<div id="status" class="good">
+
+<h2 id="headline">🟢 TEST PULITO</h2>
+
+<div id="summary">
+Nessuna anomalia rilevata.
+</div>
+
+</div>
 
 <div id="log"></div>
 
 <script>
 
-const logDiv = document.getElementById("log");
+const logBox = document.getElementById("log");
+const headline = document.getElementById("headline");
+const summary = document.getElementById("summary");
+const statusBox = document.getElementById("status");
+
+let anomalies = [];
+
+const startTime = Date.now();
+
+function timestamp(){
+    return new Date().toLocaleTimeString();
+}
 
 function log(msg){
 
-    const now = new Date();
+    logBox.textContent +=
+        "[" + timestamp() + "] " +
+        msg + "\n";
 
-    const ts =
-        now.toLocaleTimeString() +
-        "." +
-        String(now.getMilliseconds()).padStart(3,"0");
-
-    logDiv.textContent += `[${ts}] ${msg}\n`;
-
-    logDiv.scrollTop = logDiv.scrollHeight;
-
-    console.log(msg);
+    logBox.scrollTop =
+        logBox.scrollHeight;
 }
 
-/* =========================
-   EVENT LOGGER
-========================= */
+function addAnomaly(type,msg){
 
-function watch(target,event){
+    anomalies.push(msg);
 
-    target.addEventListener(
-        event,
-        () => log(event),
-        true
-    );
+    if(type === "warning"){
+        statusBox.className = "warn";
+        headline.textContent =
+            "🟡 EVENTO RILEVATO";
+    }
+
+    if(type === "critical"){
+        statusBox.className = "bad";
+        headline.textContent =
+            "🔴 ATTENZIONE";
+    }
+
+    updateSummary();
 }
 
-/* =========================
-   WINDOW EVENTS
-========================= */
+function updateSummary(){
 
-[
-"focus",
-"blur",
-"pageshow",
-"pagehide",
-"resize",
-"orientationchange",
-"online",
-"offline",
-"beforeunload",
-"unload"
-].forEach(e => watch(window,e));
+    const seconds =
+        Math.floor(
+            (Date.now()-startTime)/1000
+        );
 
-/* =========================
-   DOCUMENT EVENTS
-========================= */
+    if(anomalies.length === 0){
 
-[
-"visibilitychange",
-"focusin",
-"focusout",
-"selectionchange",
-"fullscreenchange",
-"pointerlockchange"
-].forEach(e => watch(document,e));
+        summary.innerHTML =
+        `
+        Tempo trascorso: ${seconds}s<br>
+        ✅ Focus mantenuto<br>
+        ✅ Pagina visibile<br>
+        ✅ Nessuna sospensione rilevata<br>
+        ✅ Nessun rallentamento anomalo
+        `;
 
-/* =========================
-   TOUCH EVENTS
-========================= */
+        return;
+    }
 
-[
-"touchstart",
-"touchend",
-"pointerdown",
-"pointerup"
-].forEach(e => watch(document,e));
+    summary.innerHTML =
+        `
+        Tempo trascorso: ${seconds}s<br><br>
+        Eventi rilevati:<br>
+        ${anomalies.join("<br>")}
+        `;
+}
 
-/* =========================
-   PAGE LIFECYCLE
-========================= */
+setInterval(updateSummary,1000);
 
-[
-"freeze",
-"resume"
-].forEach(e => {
+/* ======================
+   EVENTI CRITICI
+====================== */
 
-    document.addEventListener(
-        e,
-        () => log(e)
+window.addEventListener("blur",()=>{
+
+    log("🔴 Focus perso");
+
+    addAnomaly(
+        "critical",
+        "🔴 Focus perso"
     );
 
 });
 
-/* =========================
-   VISIBILITY DETAILS
-========================= */
-
 document.addEventListener(
     "visibilitychange",
-    () => {
+    ()=>{
 
         log(
-            "visibilityState=" +
-            document.visibilityState
+          "🔴 Visibility -> " +
+          document.visibilityState
+        );
+
+        addAnomaly(
+          "critical",
+          "🔴 Pagina nascosta"
         );
 
     }
 );
 
-/* =========================
-   STATE CHANGE DETECTOR
-========================= */
-
-let previous = {};
-
-function snapshot(){
-
-    return {
-
-        focus:
-            document.hasFocus(),
-
-        hidden:
-            document.hidden,
-
-        visibility:
-            document.visibilityState,
-
-        width:
-            window.innerWidth,
-
-        height:
-            window.innerHeight,
-
-        vvWidth:
-            visualViewport
-                ? visualViewport.width
-                : null,
-
-        vvHeight:
-            visualViewport
-                ? visualViewport.height
-                : null,
-
-        scale:
-            visualViewport
-                ? visualViewport.scale
-                : null,
-
-        activeElement:
-            document.activeElement
-                ? document.activeElement.tagName
-                : "null"
-    };
-}
-
-function compare(){
-
-    const current = snapshot();
-
-    if(
-        JSON.stringify(current)
-        !==
-        JSON.stringify(previous)
-    ){
+window.addEventListener(
+    "pagehide",
+    ()=>{
 
         log(
-            "STATE -> " +
-            JSON.stringify(current)
+          "🔴 Page hidden"
         );
 
-        previous = current;
+        addAnomaly(
+          "critical",
+          "🔴 Page hide"
+        );
+
     }
+);
+
+/* ======================
+   RESIZE
+====================== */
+
+window.addEventListener(
+    "resize",
+    ()=>{
+
+        log(
+          "🟡 Resize rilevato"
+        );
+
+        addAnomaly(
+          "warning",
+          "🟡 Viewport modificata"
+        );
+
+    }
+);
+
+/* ======================
+   VISUAL VIEWPORT
+====================== */
+
+if(window.visualViewport){
+
+    visualViewport.addEventListener(
+        "resize",
+        ()=>{
+
+            log(
+              "🟡 Visual viewport modificata"
+            );
+
+            addAnomaly(
+              "warning",
+              "🟡 Visual viewport modificata"
+            );
+
+        }
+    );
 }
 
-previous = snapshot();
-
-setInterval(compare,250);
-
-/* =========================
-   TIMER THROTTLING TEST
-========================= */
+/* ======================
+   TIMER DRIFT
+====================== */
 
 let last = performance.now();
 
-setInterval(() => {
+setInterval(()=>{
 
-    const now = performance.now();
+    const now =
+        performance.now();
 
-    const drift = now - last;
+    const drift =
+        now - last;
 
-    if(drift > 500){
+    if(drift > 1000){
 
         log(
-            "TIMER_DRIFT=" +
-            Math.round(drift) +
-            "ms"
+          "🟠 Timer rallentato (" +
+          Math.round(drift) +
+          " ms)"
+        );
+
+        addAnomaly(
+          "warning",
+          "🟠 Timer rallentato"
         );
     }
 
     last = now;
 
-},100);
+},250);
 
-/* =========================
-   VISUAL VIEWPORT EVENTS
-========================= */
+/* ======================
+   FREEZE / RESUME
+====================== */
 
-if(visualViewport){
+["freeze","resume"].forEach(event=>{
 
-    visualViewport.addEventListener(
-        "resize",
-        () => log("visualViewport.resize")
+    document.addEventListener(
+        event,
+        ()=>{
+
+            log(
+              "🔴 " + event
+            );
+
+            addAnomaly(
+              "critical",
+              "🔴 " + event
+            );
+
+        }
     );
 
-    visualViewport.addEventListener(
-        "scroll",
-        () => log("visualViewport.scroll")
-    );
-}
+});
 
-/* =========================
-   START
-========================= */
+/* ======================
+   AVVIO
+====================== */
 
-log("MONITOR STARTED");
-
-log(
-    "INITIAL STATE -> " +
-    JSON.stringify(snapshot())
-);
+log("🟢 Monitor avviato");
 
 </script>
 
