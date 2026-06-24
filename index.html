@@ -25,11 +25,6 @@ body{
     border:2px solid #5ea85e;
 }
 
-.warn{
-    background:#fff7db;
-    border:2px solid #d8b84a;
-}
-
 .bad{
     background:#ffe5e5;
     border:2px solid #d9534f;
@@ -54,8 +49,8 @@ body{
 }
 
 </style>
-</head>
 
+</head>
 <body>
 
 <div id="status" class="good">
@@ -76,10 +71,6 @@ Avvio monitor...
 
 <script>
 
-/* =========================================
-   ELEMENTI UI
-========================================= */
-
 const statusBox =
     document.getElementById("status");
 
@@ -92,23 +83,16 @@ const summary =
 const logBox =
     document.getElementById("log");
 
-/* =========================================
-   STATO
-========================================= */
-
-const startTime = Date.now();
+const startTime =
+    Date.now();
 
 let criticalEvents = 0;
-let minorEvents = 0;
-
-/* =========================================
-   LOG
-========================================= */
 
 function timestamp(){
 
     return new Date()
         .toLocaleTimeString();
+
 }
 
 function log(msg){
@@ -122,32 +106,40 @@ function log(msg){
 
     logBox.scrollTop =
         logBox.scrollHeight;
+
 }
 
-/* =========================================
-   AGGIORNA DASHBOARD
-========================================= */
+function critical(msg){
+
+    criticalEvents++;
+
+    log(
+        "🔴 " + msg
+    );
+
+    updateStatus();
+
+}
 
 function updateStatus(){
 
     const elapsed =
         Math.floor(
-            (Date.now() - startTime)
-            / 1000
+            (Date.now()-startTime)
+            /1000
         );
 
     const minutes =
-        Math.floor(elapsed / 60);
+        Math.floor(elapsed/60);
 
     const seconds =
-        elapsed % 60;
+        elapsed%60;
 
     const timeString =
         `${minutes}m ${seconds}s`;
 
     if(
-        criticalEvents === 0 &&
-        minorEvents === 0
+        criticalEvents === 0
     ){
 
         statusBox.className =
@@ -157,49 +149,27 @@ function updateStatus(){
             "🟢 TEST PULITO";
 
         summary.innerHTML = `
-        <b>Tempo di test:</b> ${timeString}<br><br>
+        <b>Tempo di test:</b>
+        ${timeString}
 
-        Eventi critici: 0<br>
-        Eventi minori: 0<br><br>
+        <br><br>
 
-        <b>VERDETTO</b><br>
+        Eventi critici: 0
+
+        <br><br>
+
+        <b>VERDETTO</b>
+
+        <br>
 
         Nessun segnale rilevato di:
 
         <ul>
-        <li>Perdita di focus</li>
-        <li>Pagina nascosta</li>
-        <li>Sospensione</li>
-        <li>Cambio applicazione rilevabile</li>
+            <li>Perdita di focus</li>
+            <li>Pagina nascosta</li>
+            <li>Sospensione</li>
+            <li>Cambio applicazione rilevabile</li>
         </ul>
-        `;
-
-        return;
-    }
-
-    if(
-        criticalEvents === 0
-    ){
-
-        statusBox.className =
-            "warn";
-
-        headline.textContent =
-            "🟡 TEST QUASI PULITO";
-
-        summary.innerHTML = `
-        <b>Tempo di test:</b> ${timeString}<br><br>
-
-        Eventi critici: 0<br>
-        Eventi minori: ${minorEvents}<br><br>
-
-        <b>VERDETTO</b><br>
-
-        Sono stati osservati solo
-        cambiamenti tecnici minori.
-
-        Nessun segnale di perdita
-        di focus rilevato.
         `;
 
         return;
@@ -212,62 +182,42 @@ function updateStatus(){
         "🔴 ATTENZIONE";
 
     summary.innerHTML = `
-    <b>Tempo di test:</b> ${timeString}<br><br>
+    <b>Tempo di test:</b>
+    ${timeString}
+
+    <br><br>
 
     Eventi critici:
-    ${criticalEvents}<br><br>
+    ${criticalEvents}
 
-    <b>VERDETTO</b><br>
+    <br><br>
+
+    <b>VERDETTO</b>
+
+    <br>
 
     È stato rilevato almeno un evento
     compatibile con:
 
     <ul>
-    <li>Perdita di focus</li>
-    <li>Pagina nascosta</li>
-    <li>Sospensione</li>
-    <li>Cambio applicazione</li>
+        <li>Perdita di focus</li>
+        <li>Pagina nascosta</li>
+        <li>Sospensione</li>
+        <li>Cambio applicazione</li>
     </ul>
     `;
+
 }
 
-/* =========================================
-   EVENTI
-========================================= */
-
-function critical(msg){
-
-    criticalEvents++;
-
-    log(
-        "🔴 CRITICO → " +
-        msg
-    );
-
-    updateStatus();
-}
-
-function minor(msg){
-
-    minorEvents++;
-
-    log(
-        "🟡 MINORE → " +
-        msg
-    );
-
-    updateStatus();
-}
-
-/* =========================================
+/* ==========================
    EVENTI CRITICI
-========================================= */
+========================== */
 
 window.addEventListener(
     "blur",
     () =>
     critical(
-        "focus perso"
+        "Focus perso"
     )
 );
 
@@ -280,8 +230,9 @@ document.addEventListener(
         ){
 
             critical(
-                "pagina nascosta"
+                "Pagina nascosta"
             );
+
         }
 
     }
@@ -291,7 +242,7 @@ window.addEventListener(
     "pagehide",
     () =>
     critical(
-        "pagehide"
+        "Page hide"
     )
 );
 
@@ -299,47 +250,13 @@ document.addEventListener(
     "freeze",
     () =>
     critical(
-        "freeze"
+        "Freeze"
     )
 );
 
-/* =========================================
-   EVENTI MINORI
-========================================= */
-
-window.addEventListener(
-    "resize",
-    () =>
-    minor(
-        "dimensioni finestra cambiate"
-    )
-);
-
-window.addEventListener(
-    "orientationchange",
-    () =>
-    minor(
-        "orientamento modificato"
-    )
-);
-
-if(
-    window.visualViewport
-){
-
-    visualViewport
-    .addEventListener(
-        "resize",
-        () =>
-        minor(
-            "visual viewport modificata"
-        )
-    );
-}
-
-/* =========================================
+/* ==========================
    TIMER THROTTLING
-========================================= */
+========================== */
 
 let last =
     performance.now();
@@ -357,26 +274,18 @@ setInterval(() => {
     ){
 
         critical(
-            "javascript sospeso o rallentato"
+            "JavaScript sospeso o rallentato"
         );
+
     }
 
     last = now;
 
 },250);
 
-/* =========================================
-   CHECK STATO
-========================================= */
-
-setInterval(
-    updateStatus,
-    1000
-);
-
-/* =========================================
+/* ==========================
    AVVIO
-========================================= */
+========================== */
 
 log(
     "🟢 Monitor avviato"
