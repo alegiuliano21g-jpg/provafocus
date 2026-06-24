@@ -4,44 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>iPad Focus Dashboard</title>
+<title>Focus Integrity Monitor</title>
 
 <style>
 
 body{
-    font-family: system-ui, sans-serif;
+    font-family:system-ui,sans-serif;
     padding:20px;
+    margin:0;
 }
 
 #status{
-    border:2px solid #ccc;
+    padding:20px;
     border-radius:12px;
-    padding:15px;
     margin-bottom:20px;
 }
 
 .good{
     background:#e8f7e8;
+    border:2px solid #5ea85e;
 }
 
 .warn{
-    background:#fff4d6;
+    background:#fff7db;
+    border:2px solid #d8b84a;
 }
 
 .bad{
-    background:#ffe0e0;
+    background:#ffe5e5;
+    border:2px solid #d9534f;
+}
+
+#headline{
+    margin-top:0;
+}
+
+#summary{
+    line-height:1.6;
 }
 
 #log{
     border:1px solid #ccc;
-    height:55vh;
-    overflow-y:auto;
+    border-radius:10px;
     padding:10px;
+    height:50vh;
+    overflow-y:auto;
     white-space:pre-wrap;
-}
-
-h1{
-    margin-top:0;
+    font-family:monospace;
 }
 
 </style>
@@ -49,193 +58,293 @@ h1{
 
 <body>
 
-<h1>Focus Monitor</h1>
-
 <div id="status" class="good">
 
-<h2 id="headline">🟢 TEST PULITO</h2>
+<h1 id="headline">
+🟢 TEST PULITO
+</h1>
 
 <div id="summary">
-Nessuna anomalia rilevata.
+Avvio monitor...
 </div>
 
 </div>
+
+<h2>Log eventi</h2>
 
 <div id="log"></div>
 
 <script>
 
-const logBox = document.getElementById("log");
-const headline = document.getElementById("headline");
-const summary = document.getElementById("summary");
-const statusBox = document.getElementById("status");
+/* =========================================
+   ELEMENTI UI
+========================================= */
 
-let anomalies = [];
+const statusBox =
+    document.getElementById("status");
+
+const headline =
+    document.getElementById("headline");
+
+const summary =
+    document.getElementById("summary");
+
+const logBox =
+    document.getElementById("log");
+
+/* =========================================
+   STATO
+========================================= */
 
 const startTime = Date.now();
 
+let criticalEvents = 0;
+let minorEvents = 0;
+
+/* =========================================
+   LOG
+========================================= */
+
 function timestamp(){
-    return new Date().toLocaleTimeString();
+
+    return new Date()
+        .toLocaleTimeString();
 }
 
 function log(msg){
 
     logBox.textContent +=
-        "[" + timestamp() + "] " +
-        msg + "\n";
+        "[" +
+        timestamp() +
+        "] " +
+        msg +
+        "\n";
 
     logBox.scrollTop =
         logBox.scrollHeight;
 }
 
-function addAnomaly(type,msg){
+/* =========================================
+   AGGIORNA DASHBOARD
+========================================= */
 
-    anomalies.push(msg);
+function updateStatus(){
 
-    if(type === "warning"){
-        statusBox.className = "warn";
-        headline.textContent =
-            "🟡 EVENTO RILEVATO";
-    }
-
-    if(type === "critical"){
-        statusBox.className = "bad";
-        headline.textContent =
-            "🔴 ATTENZIONE";
-    }
-
-    updateSummary();
-}
-
-function updateSummary(){
-
-    const seconds =
+    const elapsed =
         Math.floor(
-            (Date.now()-startTime)/1000
+            (Date.now() - startTime)
+            / 1000
         );
 
-    if(anomalies.length === 0){
+    const minutes =
+        Math.floor(elapsed / 60);
 
-        summary.innerHTML =
-        `
-        Tempo trascorso: ${seconds}s<br>
-        ✅ Focus mantenuto<br>
-        ✅ Pagina visibile<br>
-        ✅ Nessuna sospensione rilevata<br>
-        ✅ Nessun rallentamento anomalo
+    const seconds =
+        elapsed % 60;
+
+    const timeString =
+        `${minutes}m ${seconds}s`;
+
+    if(
+        criticalEvents === 0 &&
+        minorEvents === 0
+    ){
+
+        statusBox.className =
+            "good";
+
+        headline.textContent =
+            "🟢 TEST PULITO";
+
+        summary.innerHTML = `
+        <b>Tempo di test:</b> ${timeString}<br><br>
+
+        Eventi critici: 0<br>
+        Eventi minori: 0<br><br>
+
+        <b>VERDETTO</b><br>
+
+        Nessun segnale rilevato di:
+
+        <ul>
+        <li>Perdita di focus</li>
+        <li>Pagina nascosta</li>
+        <li>Sospensione</li>
+        <li>Cambio applicazione rilevabile</li>
+        </ul>
         `;
 
         return;
     }
 
-    summary.innerHTML =
-        `
-        Tempo trascorso: ${seconds}s<br><br>
-        Eventi rilevati:<br>
-        ${anomalies.join("<br>")}
+    if(
+        criticalEvents === 0
+    ){
+
+        statusBox.className =
+            "warn";
+
+        headline.textContent =
+            "🟡 TEST QUASI PULITO";
+
+        summary.innerHTML = `
+        <b>Tempo di test:</b> ${timeString}<br><br>
+
+        Eventi critici: 0<br>
+        Eventi minori: ${minorEvents}<br><br>
+
+        <b>VERDETTO</b><br>
+
+        Sono stati osservati solo
+        cambiamenti tecnici minori.
+
+        Nessun segnale di perdita
+        di focus rilevato.
         `;
+
+        return;
+    }
+
+    statusBox.className =
+        "bad";
+
+    headline.textContent =
+        "🔴 ATTENZIONE";
+
+    summary.innerHTML = `
+    <b>Tempo di test:</b> ${timeString}<br><br>
+
+    Eventi critici:
+    ${criticalEvents}<br><br>
+
+    <b>VERDETTO</b><br>
+
+    È stato rilevato almeno un evento
+    compatibile con:
+
+    <ul>
+    <li>Perdita di focus</li>
+    <li>Pagina nascosta</li>
+    <li>Sospensione</li>
+    <li>Cambio applicazione</li>
+    </ul>
+    `;
 }
 
-setInterval(updateSummary,1000);
+/* =========================================
+   EVENTI
+========================================= */
 
-/* ======================
-   EVENTI CRITICI
-====================== */
+function critical(msg){
 
-window.addEventListener("blur",()=>{
+    criticalEvents++;
 
-    log("🔴 Focus perso");
-
-    addAnomaly(
-        "critical",
-        "🔴 Focus perso"
+    log(
+        "🔴 CRITICO → " +
+        msg
     );
 
-});
+    updateStatus();
+}
+
+function minor(msg){
+
+    minorEvents++;
+
+    log(
+        "🟡 MINORE → " +
+        msg
+    );
+
+    updateStatus();
+}
+
+/* =========================================
+   EVENTI CRITICI
+========================================= */
+
+window.addEventListener(
+    "blur",
+    () =>
+    critical(
+        "focus perso"
+    )
+);
 
 document.addEventListener(
     "visibilitychange",
-    ()=>{
+    () => {
 
-        log(
-          "🔴 Visibility -> " +
-          document.visibilityState
-        );
+        if(
+            document.hidden
+        ){
 
-        addAnomaly(
-          "critical",
-          "🔴 Pagina nascosta"
-        );
+            critical(
+                "pagina nascosta"
+            );
+        }
 
     }
 );
 
 window.addEventListener(
     "pagehide",
-    ()=>{
-
-        log(
-          "🔴 Page hidden"
-        );
-
-        addAnomaly(
-          "critical",
-          "🔴 Page hide"
-        );
-
-    }
+    () =>
+    critical(
+        "pagehide"
+    )
 );
 
-/* ======================
-   RESIZE
-====================== */
+document.addEventListener(
+    "freeze",
+    () =>
+    critical(
+        "freeze"
+    )
+);
+
+/* =========================================
+   EVENTI MINORI
+========================================= */
 
 window.addEventListener(
     "resize",
-    ()=>{
-
-        log(
-          "🟡 Resize rilevato"
-        );
-
-        addAnomaly(
-          "warning",
-          "🟡 Viewport modificata"
-        );
-
-    }
+    () =>
+    minor(
+        "dimensioni finestra cambiate"
+    )
 );
 
-/* ======================
-   VISUAL VIEWPORT
-====================== */
+window.addEventListener(
+    "orientationchange",
+    () =>
+    minor(
+        "orientamento modificato"
+    )
+);
 
-if(window.visualViewport){
+if(
+    window.visualViewport
+){
 
-    visualViewport.addEventListener(
+    visualViewport
+    .addEventListener(
         "resize",
-        ()=>{
-
-            log(
-              "🟡 Visual viewport modificata"
-            );
-
-            addAnomaly(
-              "warning",
-              "🟡 Visual viewport modificata"
-            );
-
-        }
+        () =>
+        minor(
+            "visual viewport modificata"
+        )
     );
 }
 
-/* ======================
-   TIMER DRIFT
-====================== */
+/* =========================================
+   TIMER THROTTLING
+========================================= */
 
-let last = performance.now();
+let last =
+    performance.now();
 
-setInterval(()=>{
+setInterval(() => {
 
     const now =
         performance.now();
@@ -243,17 +352,12 @@ setInterval(()=>{
     const drift =
         now - last;
 
-    if(drift > 1000){
+    if(
+        drift > 2000
+    ){
 
-        log(
-          "🟠 Timer rallentato (" +
-          Math.round(drift) +
-          " ms)"
-        );
-
-        addAnomaly(
-          "warning",
-          "🟠 Timer rallentato"
+        critical(
+            "javascript sospeso o rallentato"
         );
     }
 
@@ -261,35 +365,24 @@ setInterval(()=>{
 
 },250);
 
-/* ======================
-   FREEZE / RESUME
-====================== */
+/* =========================================
+   CHECK STATO
+========================================= */
 
-["freeze","resume"].forEach(event=>{
+setInterval(
+    updateStatus,
+    1000
+);
 
-    document.addEventListener(
-        event,
-        ()=>{
-
-            log(
-              "🔴 " + event
-            );
-
-            addAnomaly(
-              "critical",
-              "🔴 " + event
-            );
-
-        }
-    );
-
-});
-
-/* ======================
+/* =========================================
    AVVIO
-====================== */
+========================================= */
 
-log("🟢 Monitor avviato");
+log(
+    "🟢 Monitor avviato"
+);
+
+updateStatus();
 
 </script>
 
